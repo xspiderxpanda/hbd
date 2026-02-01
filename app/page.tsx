@@ -1,65 +1,134 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+function isLikelyImageUrl(url: string) {
+  const s = url.trim();
+  if (!s) return false;
+  if (!/^https?:\/\/.+/i.test(s)) return false;
+  // ปล่อยให้ยืดหยุ่น: อาจเป็นลิงก์ที่ไม่มี .jpg ก็ได้
+  return true;
+}
+
+export default function HomePage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit = useMemo(() => {
+    return (
+      name.trim().length > 0 &&
+      message.trim().length > 0 &&
+      isLikelyImageUrl(imageUrl)
+    );
+  }, [name, message, imageUrl]);
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!canSubmit) {
+      setError("กรอกชื่อ + ข้อความ + ลิงก์รูปให้ครบก่อนนะ");
+      return;
+    }
+
+    const qs = new URLSearchParams({
+      name: name.trim(),
+      message: message.trim(),
+      image: imageUrl.trim(),
+    });
+
+    router.push(`/card?${qs.toString()}`);
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gradient-to-br from-pink-100 via-yellow-50 to-sky-100 px-4 py-10">
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-3xl bg-white/75 p-6 shadow-xl ring-1 ring-black/5 backdrop-blur">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            🎂 Happy Birthday Creator
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-2 text-slate-600">
+            ใส่ชื่อ + ข้อความอวยพร + ลิงก์รูป แล้วสร้างลิงก์การ์ดอวยพรวันเกิดได้เลย
           </p>
+
+          <form onSubmit={onSubmit} className="mt-6 space-y-4">
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">
+                ชื่อคนที่อยากอวยพร
+              </span>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="เช่น ต้นข้าว"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+                maxLength={40}
+                required
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">ข้อความอวยพร</span>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="เช่น ขอให้มีความสุขมากๆ สุขภาพแข็งแรง สมหวังทุกอย่าง 🎉"
+                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+                rows={5}
+                maxLength={250}
+                required
+              />
+              <div className="mt-1 text-right text-xs text-slate-500">
+                {message.length}/250
+              </div>
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700">ลิงก์รูปภาพ</span>
+              <input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="แนะนำ .jpg/.png"
+                className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-200"
+                required
+              />
+            
+            
+            </label>
+
+            {imageUrl.trim() && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                <div className="text-xs font-medium text-slate-600">พรีวิวรูป</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt="preview"
+                  className="mt-2 h-48 w-full rounded-xl object-cover"
+                  onError={() => setError("พรีวิวรูปไม่ขึ้น ลองเปลี่ยนเป็นลิงก์รูปแบบ direct ดูนะ")}
+                />
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full rounded-2xl bg-pink-600 px-5 py-3 font-bold text-white shadow-lg transition hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              สร้างการ์ดอวยพรวันเกิด 🎇
+            </button>
+          </form>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+      </div>
+    </main>
   );
 }
